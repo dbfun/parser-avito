@@ -12,7 +12,7 @@ class Parser {
     require_once(PFactory::getDir() . 'lib/simple_html_dom.php');
   }
   
-  private $curl, $parseCase, $linkGetter;
+  private $curl, $parseCase, $linkGetter, $proxy;
   public function parse() {
     global $argv, $argc;
     if ($argc != 4) die("Usage parser.php 'case name' 'url' number-pages".PHP_EOL);
@@ -24,7 +24,10 @@ class Parser {
     
     $this->curl = new cURL(true, PFactory::getDir() . "var/cook.txt");
     
-
+    $this->proxy = new stdClass();
+    $this->proxy->server = '5.206.237.26';
+    $this->proxy->port = '8080';
+    $this->curl->setProxy($this->proxy);
     
 
     $this->linkGetter = new LinkGetter($this->parseCase, $this->curl);

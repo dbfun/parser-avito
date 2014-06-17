@@ -46,6 +46,7 @@ class LinkGetter {
     $url = $this->baseUrl . ($query ? '?'.$query : null);
     
     $data = $this->curl->get($url, false, false);
+
     $this->page++;
     
     $html = str_get_html($data);

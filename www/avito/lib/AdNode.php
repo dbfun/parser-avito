@@ -86,7 +86,7 @@ class AdNode {
       '".addslashes($this->data->price)."', 
       {$this->parseStatus})";
     
-    printf("\r%3d%", self::$counter++);
+    printf("\r%3d%%", self::$counter++);
     $this->db->Query($query);
     return $this;
   }
