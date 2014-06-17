@@ -4,7 +4,7 @@ class Installer {
 
   private $db;
   public function __construct() {
-    require_once(__DIR__ . '/../lib/PFactory.php');
+    require_once(dirname(__FILE__) . '/../lib/PFactory.php');
     PFactory::init();
   }
   
@@ -16,15 +16,17 @@ class Installer {
       switch ($e->getCode()) {
         case DataBaseMysql::CONNECT_ERROR:
         case DataBaseMysql::USE_DB_ERROR:
-          $config = PFactory::getConfig();
-          die(var_dump($config));
+          // $config = PFactory::getConfig();
+          throw new Exception("DB Connection error. Edit config.json file!");
           break;
-        throw new Exception("DB Error");
+        default:
+          throw new Exception("DB Error!");
       }
     }
     
     $sql = file_get_contents(PFactory::getDir(). 'install/install.sql');
-    // $this->db->Query($sql);
+    $this->db->Query($sql);
+    echo 'Ok'.PHP_EOL;
   }
   
   public function selfRun() {

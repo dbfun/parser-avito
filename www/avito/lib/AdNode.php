@@ -10,10 +10,10 @@ class AdNode {
     $this->curl = $curl;
     $this->parseCase = $parseCase;
     $this->db = $db;
-    $this->dataJson = new stdClass();
+    $this->data = new stdClass();
   }
   
-  private $itemId, $ref, $phoneUrl, $html, $dataJson;
+  private $itemId, $ref, $phoneUrl, $html, $data;
   public function load() {
     $data = $this->curl->get($this->url, false, false);
     
@@ -36,41 +36,68 @@ class AdNode {
     $this->setDomData('title', 'h1.h1', 0);
     $this->setDomData('price', '.description_price span span', 0);
     // $this->setDomData('', '', 0);
-    
-    // die(var_dump($this->dataJson));
+    // die(var_dump($this->data));
 
     return $this;
   }
+
+  private function recognizePhone($imageFileName) {
+    $imageFileNameResized = $imageFileName.'.jpg';
+    $textFileName = $imageFileName.'.txt';
+    shell_exec("convert -scale 510x80 '$imageFileName' '$imageFileNameResized'");
+    shell_exec("cuneiform -l eng --singlecolumn -o '$textFileName' '$imageFileNameResized'");
+    $_text = trim(file_get_contents($textFileName));
+    unlink($imageFileNameResized);
+    unlink($textFileName);
+    unlink($imageFileName);
+    $text = preg_replace('#[^0-9]+#', '', $_text);
+    if (mb_strlen($text) == 11) {
+      $this->parseStatus = self::PARSE_OK;
+    }
+    else {
+      $this->parseStatus = self::PARSE_PHONE_FAIL;
+    }
+    return $text;
+  }
   
+  private static $counter = 0;
   public function save() {
     $img = $this->curl->get($this->phoneUrl, false, $this->ref);
-    file_put_contents(PFactory::getDir() . "var/{$this->itemId}.png", $img);
+    $imageFileName = PFactory::getDir() . "var/{$this->itemId}.png";
+    file_put_contents($imageFileName, $img);
+    
+    $this->data->phone = $this->recognizePhone($imageFileName);
+    
+    // die(var_dump($this->data));
     
     
-    // TODO OCR
-    $this->phone = '8989898989';
-    
-    $this->parseStatus = self::PARSE_OK;
     
     
-    $query = "INSERT IGNORE INTO `ads` (`case_name`, `url`, `item_id`, `phone`, `data_json`, `parse_status`) 
+    $query = "INSERT IGNORE INTO `ads` (`case_name`, `url`, `item_id`, 
+      `phone`, `name`, `place`, `service`, `description`, `title`, `price`, `parse_status`) 
       VALUES ('".addslashes($this->parseCase->name)."', '".addslashes($this->url)."', 
-      '".addslashes($this->itemId)."', '".addslashes($this->phone)."', '".addslashes(json_encode($this->dataJson))."', {$this->parseStatus})";
+      '".addslashes($this->itemId)."', 
+      '".addslashes($this->data->phone)."', 
+      '".addslashes($this->data->name)."', 
+      '".addslashes($this->data->place)."', 
+      '".addslashes($this->data->service)."', 
+      '".addslashes($this->data->description)."', 
+      '".addslashes($this->data->title)."', 
+      '".addslashes($this->data->price)."', 
+      {$this->parseStatus})";
     
-    die($query);
+    printf("\r%3d%", self::$counter++);
     $this->db->Query($query);
     return $this;
   }
   
   private function setDomData($name, $selector, $position) {
     $parsed = $this->html->find($selector, $position);
-    if (is_object($parsed)) {
-      $this->dataJson->{$name} = $this->clearText($parsed->innertext);
-    }   
+    $this->data->{$name} = is_object($parsed) ? $this->clearText($parsed->innertext) : null;
   }
   
   private function clearText($text) {
-    return trim(preg_replace('#&nbsp;#i', ' ', $text));
+    return trim(strip_tags(preg_replace('#&nbsp;#i', ' ', $text)));
   }
   
   private function decode($key, $itemid) {

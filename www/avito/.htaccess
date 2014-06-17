@@ -1,0 +1,54 @@
+# 1. Настройка корневого каталога:
+
+# - отключаем индексы на всякий случай:
+Options -Indexes
+
+# - разрешаем симлинки;
+Options +FollowSymlinks
+
+# - устанавливаем кодировку для всех типов файлов;
+AddDefaultCharset utf-8
+AddCharset utf-8 .html .css .js .xml .json .rss .atom
+
+# 2. Настраиваем php:
+<IfModule php5_module>
+# - устанавливаем уровень сообщений об ошибках в E_ALL & ~E_NOTICE
+  php_value error_reporting 30711
+# - magic quotes долой;
+  php_flag  magic_quotes_gpc off
+  php_flag  magic_quotes_runtime off
+# - оставляем для совместимости с существующим кодом;
+  php_flag  allow_call_time_pass_reference on
+# - настраиваем сессии;
+  php_value session.use_trans_sid 0
+# - настраиваем mbstring;
+  php_value mbstring.internal_encoding UTF-8
+  php_value mbstring.http_input pass
+  php_value mbstring.http_output pass
+  php_value mbstring.func_overload 7
+# - снижаем вероятность XSS.
+  php_value session.cookie_httponly true
+</IfModule>
+
+# 3. Настраиваем mod_rewrite:
+<IfModule mod_rewrite.c>
+# - запускаем rewrite engine;
+  RewriteEngine on
+
+# - отдаем статику как есть, если она соответствует реально существующим файлам;
+  RewriteCond %{REQUEST_URI} \.(jpg|gif|png|svg|swf|css|htc|js|json|zip|rar|txt|pdf|rtf|doc|xls|xml|dtd|woff|ttf)$ [NC]
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+
+# - отдаем php, html из корня, если они существуют и не симлинки;
+  RewriteCond %{REQUEST_URI} ^/[a-zA-Z0-9_-]+\.(php|html)$
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+
+# - если ничего не помогает — index.html.
+  RewriteRule ^ index.html [L]
+
+</IfModule>
