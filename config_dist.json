@@ -1,0 +1,13 @@
+{
+  "mysql": {
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "table": "dev_test"
+  },
+  "parse": {
+    "url": "http://www.avito.ru/rossiya",
+    "name": "все объявления России",
+    "pages": 3
+  }
+}
